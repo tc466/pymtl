@@ -6,6 +6,8 @@ from __future__ import print_function
 
 import os
 import sys
+import shutil
+import tempfile
 import filecmp
 import verilog
 
@@ -30,7 +32,7 @@ def TranslationTool( model_inst, lint=False, enable_blackbox=False, verilator_xi
   # translation check if there's been any changes to the source
   model_name      = model_inst.class_name
   verilog_file    = model_name + '.v'
-  temp_file       = model_name + '.v.tmp'
+  temp_file       = tempfile.NamedTemporaryFile(suffix='.v.tmp', delete=False)
   c_wrapper_file  = model_name + '_v.cpp'
   py_wrapper_file = model_name + '_v.py'
   lib_file        = 'lib{}_v.so'.format( model_name )
@@ -46,8 +48,8 @@ def TranslationTool( model_inst, lint=False, enable_blackbox=False, verilator_xi
     vcd_en = False
 
   # Write the output to a temporary file
-  with open( temp_file, 'w+' ) as fd:
-    verilog.translate( model_inst, fd, verilator_xinit=verilator_xinit )
+  verilog.translate( model_inst, temp_file, verilator_xinit=verilator_xinit )
+  temp_file.close()
 
   # write Verilog with black boxes
   if enable_blackbox:
@@ -62,21 +64,23 @@ def TranslationTool( model_inst, lint=False, enable_blackbox=False, verilator_xi
        and exists(lib_file)
        and exists(obj_dir) ):
 
-    cached = filecmp.cmp( temp_file, verilog_file )
+    cached = filecmp.cmp( temp_file.name, verilog_file )
 
     # if not cached:
     #   os.system( ' diff %s %s'%( temp_file, verilog_file ))
 
-  # Rename temp to actual output
-  os.rename( temp_file, verilog_file )
-
   # Verilate the module only if we've updated the verilog source
   if not cached:
+    # Rename temp to actual output
+    shutil.move( temp_file.name, verilog_file )
+
     #print( "NOT CACHED", verilog_file )
     verilog_to_pymtl( model_inst, verilog_file, c_wrapper_file,
                       lib_file, py_wrapper_file, vcd_en, lint,
                       verilator_xinit )
-  #else:
+  else:
+    # Delete temp file
+    os.unlink(temp_file.name)
   #  print( "CACHED", verilog_file )
 
   # Use some trickery to import the verilated version of the model
