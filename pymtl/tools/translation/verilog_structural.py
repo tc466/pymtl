@@ -197,11 +197,14 @@ signal_decl = tab + '{:6} {} {}'
 port_delim  = ',' + endl
 wire_delim  = ';' + endl
 assignment  = tab + 'assign {} = {};'
-def declare_bitwidth( nbits ):
+def declare_bitwidth( nbits, name = '' ):
   # TODO: need to figure out a way to detect when single-bit wires are
   #       array indexed to make this swap!
-  #return nbits_decl.format( nbits ) if nbits else onebit_decl
-  return nbits_decl.format( nbits )
+  # Hack: assume single-bit clock and reset signals are not in an array
+  if name == 'clk' or name == 'reset':
+    return nbits_decl.format( nbits ) if nbits else onebit_decl
+  else:
+    return nbits_decl.format( nbits )
 
 #-----------------------------------------------------------------------
 # port_decl
@@ -217,7 +220,7 @@ def port_decl( port ):
   nbits = port.nbits - 1
   name  = mangle_name( port.name )
 
-  return ioport_decl.format( direction, type_, declare_bitwidth(nbits), name )
+  return ioport_decl.format( direction, type_, declare_bitwidth(nbits, name), name )
 
 #-----------------------------------------------------------------------
 # wire_decl
