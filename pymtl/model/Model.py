@@ -651,13 +651,19 @@ class Model( object ):
     # Generate a unique name for the Model instance based on its params
     # http://stackoverflow.com/a/5884123
     try:
-      hashables = { x for x in model._args.items()
-                    if isinstance( x[1], collections.Hashable ) }
+      hashables = []
+      for x in model._args.items():
+        if isinstance( x[1], collections.Hashable ):
+          hashables.append(x)
+        elif isinstance( x[1], dict ):
+          # if param is a dict, hash its items
+          hashables.extend( [ y for y in x[1].items()
+                              if isinstance( y[1], collections.Hashable ) ] )
 
       # Add module name to the set to prevent collisions between classes
       # with same name and same args but in different modules (see test
       # case in Model_test.py, ClassNameCollision)
-      hashables.add( model.__module__ )
+      hashables.append( model.__module__ )
 
       hashables = frozenset( hashables )
       suffix = abs( hash( hashables ) )
