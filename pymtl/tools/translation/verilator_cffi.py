@@ -276,9 +276,10 @@ def try_cmd( name, cmd ):
 
 def compile( flags, include_dirs, output_file, input_files ):
 
-  compile_cmd = 'g++ {flags} {idirs} -o {ofile} {ifiles}'
+  compile_cmd = '{cxx} {flags} {idirs} -o {ofile} {ifiles}'
 
   compile_cmd = compile_cmd.format(
+    cxx    = os.environ.get('CXX', 'g++'),
     flags  = flags,
     idirs  = ' '.join( [ '-I'+s for s in include_dirs ] ),
     ofile  = output_file,
