@@ -51,6 +51,13 @@ class SimulationTool( object ):
     #self._DEBUG_signal_cbs    = collections.defaultdict(list)
 
 
+    # Collect statistics if configured and model supports stats
+    self.collect_stats = bool(getattr(model, 'stats_file', None)) and \
+        hasattr(model, 'reg_stats') and hasattr(model, 'tick_stats')
+
+    if self.collect_stats:
+      model.reg_stats()
+
     # Only collect metrics if they are enabled, otherwise replace
     # with a dummy collection class.
 
@@ -136,6 +143,10 @@ class SimulationTool( object ):
     # Distinguish between events caused by input vectors changing (above)
     # and events caused by clocked logic (below).
     self.metrics.start_tick()
+
+    # Tick stats
+    if self.collect_stats:
+      self.model.tick_stats()
 
     # Call all rising edge triggered functions
     for func in self._sequential_blocks:
